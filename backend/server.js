@@ -2,18 +2,20 @@ import exp from "express"
 import { shortApp } from "./APIs/shorten.js"
 import { authRouter } from "./APIs/auth.js"
 import { connect } from "mongoose"
+import { config } from "dotenv";
 import cors from "cors";
 
+config()
 const app=exp()
 
 app.use(cors({
-  origin: "http://localhost:5173"
+  origin: process.env.CLIENT_URL, credentials:true
 }));
 
 app.use(exp.json())
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/url-shortner-db";
+const MONGODB_URI = process.env.MONGODB_URI ;
 
 async function connectToDB(){
     try{
