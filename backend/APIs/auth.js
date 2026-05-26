@@ -8,6 +8,15 @@ export const authRouter = exp.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "url_shortener_secret_key_987654321";
 
+const isProd = process.env.NODE_ENV === "production" || process.env.RENDER === "true";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+};
+
 // REGISTER
 authRouter.post("/register", async (req, res) => {
   try {
@@ -45,12 +54,7 @@ authRouter.post("/register", async (req, res) => {
     const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: "7d" });
 
     // Set HTTP-Only Cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.status(201).json({
       message: "Registration successful",
@@ -98,12 +102,7 @@ authRouter.post("/login", async (req, res) => {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
 
     // Set HTTP-Only Cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.status(200).json({
       message: "Login successful",
@@ -124,8 +123,8 @@ authRouter.post("/login", async (req, res) => {
 authRouter.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
   });
   res.status(200).json({ message: "Logout successful" });
 });
