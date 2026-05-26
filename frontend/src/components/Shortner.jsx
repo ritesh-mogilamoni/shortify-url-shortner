@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createShortUrl, getStats, getUserProfile, getUserUrls, logoutUser, baseURL, shortLinkHost } from "../api/urlApi";
 import { Sidebar } from "./Sidebar";
 import { AuthModal } from "./AuthModal";
+import { ErrorModal } from "./ErrorModal";
 
 export function Shortener() {
   const [url, setUrl] = useState("");
@@ -26,12 +27,30 @@ export function Shortener() {
   const [expiryPreset, setExpiryPreset] = useState("1h");
   const [expiresAt, setExpiresAt] = useState("");
 
+  // Error Modal State for redirects (expired/not found)
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorType, setErrorType] = useState("");
+
   const openAuthModal = (reason = "") => {
     setAuthReason(reason);
     setIsAuthModalOpen(true);
   };
 
+  const handleCloseErrorModal = () => {
+    setErrorModalOpen(false);
+    setErrorType("");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  };
+
   useEffect(() => {
+    // Check URL parameters for redirection errors
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get("error");
+    if (errorParam === "expired" || errorParam === "not_found") {
+      setErrorType(errorParam);
+      setErrorModalOpen(true);
+    }
+
     setLoadingUrls(true);
     getUserProfile()
       .then((res) => {
@@ -713,6 +732,13 @@ export function Shortener() {
         }}
         onAuthSuccess={handleAuthSuccess}
         authReason={authReason}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorModalOpen}
+        type={errorType}
+        onClose={handleCloseErrorModal}
       />
     </div>
   );

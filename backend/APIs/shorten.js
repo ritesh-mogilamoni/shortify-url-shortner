@@ -107,6 +107,8 @@ shortApp.get('/stats/:shortCode', authMiddleware, async (req, res) => {
 //     }
 // })
 
+
+
 shortApp.get('/:shortCode', async (req, res) => {
   try {
     const { shortCode } = req.params;
@@ -117,16 +119,14 @@ shortApp.get('/:shortCode', async (req, res) => {
       { returnDocument: "after" }
     );
 
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
     if (!doc) {
-      return res.status(404).json({
-        message: "Short URL not found"
-      });
+      return res.redirect(`${clientUrl}?error=not_found`);
     }
 
     if (doc.expiresAt && doc.expiresAt < new Date()) {
-      return res.status(410).json({
-        message: "This link has expired"
-      });
+      return res.redirect(`${clientUrl}?error=expired`);
     }
 
     return res.redirect(doc.originalUrl);
