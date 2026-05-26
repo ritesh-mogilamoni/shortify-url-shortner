@@ -4,6 +4,7 @@ import { authRouter } from "./APIs/auth.js"
 import { connect } from "mongoose"
 import { config } from "dotenv";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 config()
 const app=exp()
@@ -12,6 +13,7 @@ app.use(cors({
   origin: process.env.CLIENT_URL, credentials:true
 }));
 
+app.use(cookieParser())
 app.use(exp.json())
 
 const PORT = process.env.PORT || 5000;

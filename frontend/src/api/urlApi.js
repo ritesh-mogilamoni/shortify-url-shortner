@@ -4,22 +4,9 @@ export const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export const shortLinkHost = import.meta.env.VITE_SHORT_LINK_HOST || "http://localhost:5000";
 
 const API = axios.create({
-  baseURL, 
+  baseURL,
+  withCredentials: true,
 });
-
-// Request interceptor to attach JWT token
-API.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // AUTH APIS
 export const registerUser = (username, email, password) =>
@@ -27,6 +14,9 @@ export const registerUser = (username, email, password) =>
 
 export const loginUser = (loginKey, password) =>
   API.post("/auth/login", { loginKey, password });
+
+export const logoutUser = () =>
+  API.post("/auth/logout");
 
 export const getUserProfile = () =>
   API.get("/auth/me");
