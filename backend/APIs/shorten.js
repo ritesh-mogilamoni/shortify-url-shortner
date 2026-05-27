@@ -107,7 +107,95 @@ shortApp.get('/stats/:shortCode', authMiddleware, async (req, res) => {
 //     }
 // })
 
+const getErrorHtml = (title, message, iconType) => {
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  
+  const iconSvg = iconType === "expired" 
+    ? `<svg xmlns="http://www.w3.org/2000/svg" style="height: 48px; width: 48px; margin: 0 auto;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" style="height: 48px; width: 48px; margin: 0 auto;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+       </svg>`;
 
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} | Shortify</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #0A0A0A;
+      border: 1px solid #1C1C1C;
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(57, 255, 20, 0.03);
+    }
+    .icon {
+      color: #39FF14;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      color: #ffffff;
+    }
+    p {
+      color: #a3a3a3;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 30px 0;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #39FF14;
+      color: #000000;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+    .btn:hover {
+      box-shadow: 0 0 15px rgba(57, 255, 20, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">${iconSvg}</div>
+    <h1>${title}</h1>
+    <p>${message}</p>
+    <a href="${clientUrl}" class="btn">Go to Shortify</a>
+  </div>
+</body>
+</html>`;
+};
 
 shortApp.get('/:shortCode', async (req, res) => {
   try {
@@ -119,14 +207,26 @@ shortApp.get('/:shortCode', async (req, res) => {
       { returnDocument: "after" }
     );
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-
     if (!doc) {
-      return res.redirect(`${clientUrl}?error=not_found`);
+      res.setHeader("Content-Type", "text/html");
+      return res.status(404).send(
+        getErrorHtml(
+          "Link Not Found",
+          "The shortened link you are trying to visit does not exist. It may have been deleted, or the URL could be mistyped.",
+          "not_found"
+        )
+      );
     }
 
     if (doc.expiresAt && doc.expiresAt < new Date()) {
-      return res.redirect(`${clientUrl}?error=expired`);
+      res.setHeader("Content-Type", "text/html");
+      return res.status(410).send(
+        getErrorHtml(
+          "Link Expired",
+          "This shortened link has reached its expiration date and is no longer active. Please contact the link creator to obtain a valid link.",
+          "expired"
+        )
+      );
     }
 
     return res.redirect(doc.originalUrl);

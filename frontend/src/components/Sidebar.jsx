@@ -203,7 +203,6 @@ export function Sidebar({
               ) : (
                 <>
                   {displayedUrls.map((url) => {
-                    const fullShortUrl = `${shortLinkHost}/${url.shortCode}`;
                     const isCopied = copiedId === url._id;
 
                     return (

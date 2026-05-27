@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { createShortUrl, getStats, getUserProfile, getUserUrls, logoutUser, baseURL, shortLinkHost } from "../api/urlApi";
 import { Sidebar } from "./Sidebar";
 import { AuthModal } from "./AuthModal";
-import { ErrorModal } from "./ErrorModal";
 
 export function Shortener() {
   const [url, setUrl] = useState("");
@@ -19,7 +18,7 @@ export function Shortener() {
   // Auth States
   const [user, setUser] = useState(null);
   const [urls, setUrls] = useState([]);
-  const [loadingUrls, setLoadingUrls] = useState(false);
+  const [loadingUrls, setLoadingUrls] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authReason, setAuthReason] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -27,31 +26,20 @@ export function Shortener() {
   const [expiryPreset, setExpiryPreset] = useState("1h");
   const [expiresAt, setExpiresAt] = useState("");
 
-  // Error Modal State for redirects (expired/not found)
-  const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [errorType, setErrorType] = useState("");
+  const [minExpiryDate, setMinExpiryDate] = useState("");
+
+  const updateMinExpiryDate = () => {
+    const offset = new Date().getTimezoneOffset() * 60000;
+    const local = new Date(Date.now() + 60000 - offset);
+    setMinExpiryDate(local.toISOString().slice(0, 16));
+  };
 
   const openAuthModal = (reason = "") => {
     setAuthReason(reason);
     setIsAuthModalOpen(true);
   };
 
-  const handleCloseErrorModal = () => {
-    setErrorModalOpen(false);
-    setErrorType("");
-    window.history.replaceState({}, document.title, window.location.pathname);
-  };
-
   useEffect(() => {
-    // Check URL parameters for redirection errors
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get("error");
-    if (errorParam === "expired" || errorParam === "not_found") {
-      setErrorType(errorParam);
-      setErrorModalOpen(true);
-    }
-
-    setLoadingUrls(true);
     getUserProfile()
       .then((res) => {
         setUser(res.data.user);
@@ -366,7 +354,12 @@ export function Shortener() {
                         <input
                           type="checkbox"
                           checked={expiryEnabled}
-                          onChange={(e) => setExpiryEnabled(e.target.checked)}
+                          onChange={(e) => {
+                            setExpiryEnabled(e.target.checked);
+                            if (e.target.checked && expiryPreset === "custom") {
+                              updateMinExpiryDate();
+                            }
+                          }}
                           className="h-4 w-4 rounded border-dark-border bg-black text-neon-green focus:ring-neon-green/20"
                         />
                         <span>Enable Link Expiration</span>
@@ -386,7 +379,12 @@ export function Shortener() {
                               <button
                                 key={preset.value}
                                 type="button"
-                                onClick={() => setExpiryPreset(preset.value)}
+                                onClick={() => {
+                                  setExpiryPreset(preset.value);
+                                  if (preset.value === "custom") {
+                                    updateMinExpiryDate();
+                                  }
+                                }}
                                 className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                                   expiryPreset === preset.value
                                     ? "bg-neon-green border-neon-green text-black font-bold shadow-sm"
@@ -407,7 +405,7 @@ export function Shortener() {
                                 value={expiresAt}
                                 onChange={(e) => setExpiresAt(e.target.value)}
                                 required
-                                min={new Date(Date.now() + 60000 - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)} // minimum 1 minute in future (local time)
+                                min={minExpiryDate}
                                 className="bg-black border border-dark-border text-white rounded-lg px-3 py-1.5 text-xs outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/10"
                               />
                             </div>
@@ -732,13 +730,6 @@ export function Shortener() {
         }}
         onAuthSuccess={handleAuthSuccess}
         authReason={authReason}
-      />
-
-      {/* Error Modal */}
-      <ErrorModal
-        isOpen={errorModalOpen}
-        type={errorType}
-        onClose={handleCloseErrorModal}
       />
     </div>
   );
